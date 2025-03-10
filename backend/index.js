@@ -108,19 +108,23 @@ app.get("/allproducts", async (req, res) => {
   }
 });
 
-
 app.get("/product/:id", async (req, res) => {
   try {
-    const { id } = req.params; // Extract the ID from request parameters
-    const product = await Product.findById(id); // Find product by ID
+    const productId = parseInt(req.params.id); // Convert to number
 
+    // Ensure the ID is a valid number
+    if (isNaN(productId)) {
+      return res.status(400).json({ success: false, message: "Invalid Product ID" });
+    }
+
+    const product = await Product.findOne({ id: productId }); // Query by `id` (Number)
+    
     if (!product) {
       return res.status(404).json({ success: false, message: "Product not found" });
     }
 
     res.json({ success: true, product });
   } catch (err) {
-    console.error("Error fetching product:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
