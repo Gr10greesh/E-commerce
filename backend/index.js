@@ -108,6 +108,25 @@ app.get("/allproducts", async (req, res) => {
   }
 });
 
+
+app.get("/product/:id", async (req, res) => {
+  try {
+    const { id } = req.params; // Extract the ID from request parameters
+    const product = await Product.findById(id); // Find product by ID
+
+    if (!product) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    res.json({ success: true, product });
+  } catch (err) {
+    console.error("Error fetching product:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
+
 app.post("/removeproduct", async (req, res) => {
   const { id } = req.body; // Get the product ID from the request body
 
