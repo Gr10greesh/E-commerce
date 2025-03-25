@@ -8,7 +8,7 @@ const path = require("path"); // Import the path module
 const { type } = require("os");
 
 const app = express();
-const port = 4000;
+const port = 4001;
 
 // Middleware
 app.use(express.json());
@@ -57,7 +57,83 @@ const Product = mongoose.model("Product",{
   },
 
 })
+const cartSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  items: [
+    {
+      productId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product",
+        required: true,
+      },
+      quantity: {
+        type: Number,
+        required: true,
+        default: 1,
+      },
+    },
+  ],
+})
 
+const Cart = mongoose.model("Cart", cartSchema);
+
+
+app.post("/update-cart", async (req, res) => {
+  try {
+    const token = req.header("auth-token");
+    if (!token) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+    const decoded = jwt.verify(token, "secret_ecom");
+    const userId = decoded.user.id;
+    const { cartItems } = req.body;
+
+    let cart = await Cart.findOne({ userId });
+
+    if (!cart) {
+      cart = new Cart({ userId, items: [] });
+    }
+
+    // Use `_id` (ObjectId) instead of `id` (number)
+    cart.items = Object.keys(cartItems).map((productId) => {
+      if (!mongoose.Types.ObjectId.isValid(productId)) {
+        throw new Error(`Invalid productId: ${productId}`);
+      }
+      return {
+        productId: new mongoose.Types.ObjectId(productId),
+        quantity: cartItems[productId],
+      };
+    });
+
+    await cart.save();
+    res.json({ success: true, message: "Cart updated", cart });
+
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
+
+app.get("/cart", async (req, res) => {
+  try {
+    const token = req.header("auth-token");
+    if (!token) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+    const decoded = jwt.verify(token, "secret_ecom");
+    const userId = decoded.user.id;
+
+    const cart = await Cart.findOne({ userId }).populate("items.productId");
+    if (!cart) return res.status(404).json({ success: false, message: "Cart not found" });
+
+    res.json({ success: true, items: cart.items });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 
 app.post("/addproduct", async (req, res) => {
@@ -87,6 +163,24 @@ app.post("/addproduct", async (req, res) => {
   }
 });
 
+
+app.get('/category/:category', async (req, res) => {
+  const { category } = req.params;
+
+  try {
+    const products = await Product.find({ category: category.toLowerCase() });
+
+    if (!products.length) {
+      return res.status(404).json({ message: `No products found in category '${category}'.` });
+    }
+
+    res.status(200).json(products);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
 app.get("/maxproductid", async (req, res) => {
   try {
     const maxIdProduct = await Product.findOne().sort({ id: -1 }); // Find the product with the highest id
@@ -107,6 +201,8 @@ app.get("/allproducts", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+
 
 app.get("/product/:id", async (req, res) => {
   try {
@@ -130,7 +226,6 @@ app.get("/product/:id", async (req, res) => {
 });
 
 
-
 app.post("/removeproduct", async (req, res) => {
   const { id } = req.body; // Get the product ID from the request body
 
@@ -145,7 +240,7 @@ app.post("/removeproduct", async (req, res) => {
 
 // Database Connection with MongoDB
 mongoose
-  .connect("mongodb+srv://greeshdahal432:9860461600@cluster0.f0zi3.mongodb.net/e-commerce")
+  .connect("mongodb+srv://johncarliblue:gr10greesh@cluster0.qig4n.mongodb.net/e-commerce")
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.error("MongoDB Connection Error:", err));
 
@@ -271,3 +366,10 @@ app.listen(port, (error) => {
     console.log("Error: " + error);
   }
 });
+
+
+
+
+
+
+

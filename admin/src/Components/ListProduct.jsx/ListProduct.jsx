@@ -8,7 +8,7 @@ const ListProduct = () => {
 
   const fetchInfo = async () => {
     try {
-      const res = await fetch('http://localhost:4000/allproducts');
+      const res = await fetch('http://localhost:4001/allproducts');
       const data = await res.json();
       setAllProducts(data);
     } catch (error) {
@@ -22,7 +22,7 @@ const ListProduct = () => {
 
   const handleRemove = async (id) => {
     try {
-      await fetch('http://localhost:4000/removeproduct', {
+      await fetch('http://localhost:4001/removeproduct', {
         method: 'POST',
         headers: {
           Accept: 'application/json',
